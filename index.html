@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>鹈鹕骑自行车 · Pelican on a Bicycle</title>
+  <style>
+    :root {
+      --bg-card: rgba(255, 255, 255, 0.88);
+      --text-main: #0f172a;
+      --text-sub: #475569;
+      --accent: #0284c7;
+      --accent-hover: #0369a1;
+      --warm: #f59e0b;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: linear-gradient(160deg, #0f172a 0%, #1e293b 100%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .app-shell {
+      width: 100%;
+      max-width: 920px;
+      background: #ffffff;
+      border-radius: 24px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4);
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .stage-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      background: #bae6fd;
+      overflow: hidden;
+      user-select: none;
+    }
+    svg#scene {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .hud-badge {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      background: var(--bg-card);
+      backdrop-filter: blur(8px);
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-main);
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .hud-stats {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: var(--bg-card);
+      backdrop-filter: blur(8px);
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-sub);
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
+      display: flex;
+      gap: 14px;
+    }
+    .hud-stats span b {
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+    .controls-bar {
+      padding: 18px 24px;
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .slider-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+      min-width: 220px;
+    }
+    .slider-group label {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-sub);
+      white-space: nowrap;
+    }
+    input[type="range"] {
+      flex: 1;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    button {
+      appearance: none;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: var(--text-main);
+      padding: 9px 16px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+    button:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+      transform: translateY(-1px);
+    }
+    button:active {
+      transform: translateY(0);
+    }
+    button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+    button.primary:hover {
+      background: var(--accent-hover);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <div class="stage-wrap">
+      <div class="hud-badge">
+        <span>🦩 鹈鹕骑自行车</span>
+        <span style="color:#64748b;font-weight:400;">| 互动 SVG 动画</span>
+      </div>
+      <div class="hud-stats">
+        <span>速度: <b id="speedVal">24</b> km/h</span>
+        <span>里程: <b id="distVal">0.00</b> km</span>
+        <span>鱼篓: <b id="fishVal">3</b> 条鱼</span>
+      </div>
+
+      <svg id="scene" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+        <defs>
+          <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop id="skyStop1" offset="0%" stop-color="#bae6fd" />
+            <stop id="skyStop2" offset="55%" stop-color="#e0f2fe" />
+            <stop id="skyStop3" offset="100%" stop-color="#fef3c7" />
+          </linearGradient>
+          <linearGradient id="seaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#0284c7" />
+            <stop offset="100%" stop-color="#0369a1" />
+          </linearGradient>
+          <linearGradient id="roadGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#475569" />
+            <stop offset="100%" stop-color="#334155" />
+          </linearGradient>
+          <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ffffff" />
+            <stop offset="70%" stop-color="#f8fafc" />
+            <stop offset="100%" stop-color="#e2e8f0" />
+          </linearGradient>
+          <linearGradient id="wingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ffffff" />
+            <stop offset="65%" stop-color="#f1f5f9" />
+            <stop offset="100%" stop-color="#cbd5e1" />
+          </linearGradient>
+          <linearGradient id="beakUpperGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#fbbf24" />
+            <stop offset="60%" stop-color="#f59e0b" />
+            <stop offset="100%" stop-color="#ea580c" />
+          </linearGradient>
+          <linearGradient id="pouchGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#fde68a" />
+            <stop offset="40%" stop-color="#fb923c" />
+            <stop offset="100%" stop-color="#ea580c" />
+          </linearGradient>
+          <linearGradient id="legGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#fb923c" />
+            <stop offset="100%" stop-color="#ea580c" />
+          </linearGradient>
+          <linearGradient id="frameGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ef4444" />
+            <stop offset="100%" stop-color="#b91c1c" />
+          </linearGradient>
+          <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
+            <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.15" />
+          </filter>
+        </defs>
+
+        <!-- Sky -->
+        <rect width="800" height="600" fill="url(#skyGrad)" />
+
+        <!-- Sun -->
+        <g id="sunGroup">
+          <circle cx="680" cy="110" r="52" fill="#fde047" opacity="0.85" />
+          <circle cx="680" cy="110" r="68" fill="#fef08a" opacity="0.35" />
+        </g>
+
+        <!-- Scrolling Clouds -->
+        <g id="cloudsGroup" fill="#ffffff" opacity="0.85">
+          <path id="cloud1" d="M 110 120 Q 110 95 135 95 Q 150 75 180 85 Q 205 75 220 95 Q 245 98 245 120 Z" />
+          <path id="cloud2" d="M 480 80 Q 480 62 500 62 Q 515 48 538 55 Q 558 50 568 65 Q 585 68 585 80 Z" />
+        </g>
+
+        <!-- Distant Seagulls -->
+        <g id="gullsGroup" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linecap="round">
+          <path d="M 290 130 Q 300 120 310 130 Q 320 120 330 130" />
+          <path d="M 350 110 Q 357 103 364 110 Q 371 103 378 110" />
+        </g>
+
+        <!-- Ocean & Waves -->
+        <rect x="0" y="420" width="800" height="55" fill="url(#seaGrad)" />
+        <path id="seaWaves" d="M 40 440 Q 65 435 90 440 M 220 450 Q 250 444 280 450 M 420 442 Q 450 436 480 442 M 600 438 Q 630 433 660 438" stroke="#7dd3fc" stroke-width="2.5" fill="none" opacity="0.65" stroke-linecap="round" />
+
+        <!-- Boardwalk & Road -->
+        <rect x="0" y="470" width="800" height="15" fill="#d97706" />
+        <rect x="0" y="485" width="800" height="115" fill="url(#roadGrad)" />
+        <line id="roadStripe" x1="-160" y1="540" x2="960" y2="540" stroke="#facc15" stroke-width="6" stroke-dasharray="45 35" stroke-linecap="round" opacity="0.85" />
+
+        <!-- Ground Shadow -->
+        <ellipse id="bikeShadow" cx="400" cy="522" rx="225" ry="14" fill="#0f172a" opacity="0.28" />
+
+        <!-- Whole Bike + Pelican Rig (for wheelie / jump rotation around rear wheel 250,430) -->
+        <g id="bikeRig">
+          <!-- Far Leg (dynamically updated via IK) -->
+          <g id="farLegGroup">
+            <line id="farCrank" x1="390" y1="430" x2="360" y2="475" stroke="#64748b" stroke-width="7" stroke-linecap="round" />
+            <line id="farThigh" x1="335" y1="300" x2="345" y2="385" stroke="#cbd5e1" stroke-width="18" stroke-linecap="round" />
+            <line id="farShin" x1="345" y1="385" x2="360" y2="475" stroke="#d97706" stroke-width="10" stroke-linecap="round" />
+            <circle id="farKnee" cx="345" cy="385" r="7" fill="#d97706" />
+            <path id="farFoot" d="M 352 472 L 395 476 C 398 468 385 462 365 466 Z" fill="#d97706" />
+            <rect id="farPedal" x="344" y="473" width="36" height="8" rx="4" fill="#1e293b" />
+          </g>
+
+          <!-- Rear Wheel -->
+          <g transform="translate(250, 430)">
+            <g id="rearWheelSpin">
+              <g stroke="#cbd5e1" stroke-width="2">
+                <line x1="-76" y1="0" x2="76" y2="0" />
+                <line x1="0" y1="-76" x2="0" y2="76" />
+                <line x1="-54" y1="-54" x2="54" y2="54" />
+                <line x1="-54" y1="54" x2="54" y2="-54" />
+                <line x1="-66" y1="-38" x2="66" y2="38" />
+                <line x1="-38" y1="-66" x2="38" y2="66" />
+                <line x1="-66" y1="38" x2="66" y2="-38" />
+                <line x1="-38" y1="66" x2="38" y2="-66" />
+              </g>
+              <!-- Valve reflector -->
+              <circle cx="0" cy="-58" r="4" fill="#facc15" />
+            </g>
+            <circle r="82" fill="none" stroke="#1e293b" stroke-width="14" />
+            <circle r="73" fill="none" stroke="#fef3c7" stroke-width="4" />
+            <circle r="69" fill="none" stroke="#94a3b8" stroke-width="3" />
+            <circle r="16" fill="#475569" stroke="#cbd5e1" stroke-width="3" stroke-dasharray="5 3" />
+          </g>
+
+          <!-- Front Wheel -->
+          <g transform="translate(545, 430)">
+            <g id="frontWheelSpin">
+              <g stroke="#cbd5e1" stroke-width="2">
+                <line x1="-76" y1="0" x2="76" y2="0" />
+                <line x1="0" y1="-76" x2="0" y2="76" />
+                <line x1="-54" y1="-54" x2="54" y2="54" />
+                <line x1="-54" y1="54" x2="54" y2="-54" />
+                <line x1="-66" y1="-38" x2="66" y2="38" />
+                <line x1="-38" y1="-66" x2="38" y2="66" />
+                <line x1="-66" y1="38" x2="66" y2="-38" />
+                <line x1="-38" y1="66" x2="38" y2="-66" />
+              </g>
+              <circle cx="0" cy="58" r="4" fill="#facc15" />
+            </g>
+            <circle r="82" fill="none" stroke="#1e293b" stroke-width="14" />
+            <circle r="73" fill="none" stroke="#fef3c7" stroke-width="4" />
+            <circle r="69" fill="none" stroke="#94a3b8" stroke-width="3" />
+            <circle r="10" fill="#64748b" stroke="#e2e8f0" stroke-width="3" />
+          </g>
+
+          <!-- Fenders -->
+          <path d="M 155 415 A 95 95 0 0 1 325 370" fill="none" stroke="#dc2626" stroke-width="8" stroke-linecap="round" />
+          <path d="M 465 375 A 95 95 0 0 1 625 385" fill="none" stroke="#dc2626" stroke-width="8" stroke-linecap="round" />
+
+          <!-- Chain -->
+          <path id="bikeChain" d="M 250 415 L 390 404 A 26 26 0 0 1 390 456 L 250 445 A 15 15 0 0 1 250 415 Z" fill="none" stroke="#334155" stroke-width="4" stroke-dasharray="6 4" />
+
+          <!-- Seatpost & Handlebar Stem -->
+          <line x1="342" y1="305" x2="332" y2="265" stroke="#94a3b8" stroke-width="9" stroke-linecap="round" />
+          <path d="M 490 290 L 478 240 Q 474 225 455 230 L 435 236" fill="none" stroke="#cbd5e1" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
+
+          <!-- Diamond Frame -->
+          <g stroke="url(#frameGrad)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="url(#softShadow)">
+            <line x1="250" y1="430" x2="390" y2="430" stroke-width="10" />
+            <line x1="250" y1="430" x2="342" y2="305" stroke-width="9" />
+            <line x1="390" y1="430" x2="342" y2="305" />
+            <line x1="390" y1="430" x2="498" y2="325" />
+            <path d="M 342 305 Q 415 305 490 295" />
+            <line x1="488" y1="286" x2="500" y2="334" stroke-width="14" />
+            <path d="M 498 328 Q 515 385 545 430" stroke-width="10" />
+          </g>
+
+          <circle cx="250" cy="430" r="9" fill="#e2e8f0" stroke="#475569" stroke-width="3" />
+
+          <!-- Chainring -->
+          <g transform="translate(390, 430)">
+            <circle r="26" fill="#e2e8f0" stroke="#64748b" stroke-width="5" />
+            <circle id="chainringSpin" r="18" fill="none" stroke="#94a3b8" stroke-width="3" stroke-dasharray="8 6" />
+            <circle r="7" fill="#475569" />
+          </g>
+
+          <!-- Front Basket -->
+          <g transform="translate(498, 246) rotate(8)">
+            <path d="M 28 2 C 35 -18 52 -22 50 -5 C 48 5 35 10 25 10 Z" fill="#38bdf8" stroke="#0284c7" stroke-width="2" />
+            <path d="M 48 -8 L 62 -18 L 57 -3 L 64 6 L 47 0 Z" fill="#0284c7" />
+            <rect x="0" y="0" width="52" height="42" rx="6" fill="#d97706" stroke="#92400e" stroke-width="3" />
+            <line x1="0" y1="14" x2="52" y2="14" stroke="#92400e" stroke-width="2" />
+            <line x1="0" y1="28" x2="52" y2="28" stroke="#92400e" stroke-width="2" />
+            <line x1="17" y1="0" x2="17" y2="42" stroke="#92400e" stroke-width="2" />
+            <line x1="35" y1="0" x2="35" y2="42" stroke="#92400e" stroke-width="2" />
+            <rect x="-3" y="-4" width="58" height="8" rx="4" fill="#b45309" stroke="#78350f" stroke-width="2" />
+          </g>
+
+          <!-- Leather Saddle -->
+          <path d="M 300 265 Q 325 250 368 262 Q 375 270 355 275 Q 325 276 304 278 Q 292 275 300 265 Z" fill="#78350f" stroke="#451a03" stroke-width="3" />
+
+          <!-- Pelican Upper Body (bobs gently with pedaling) -->
+          <g id="pelicanBody" filter="url(#softShadow)">
+            <!-- Tail Feathers -->
+            <path d="M 265 268 L 222 252 L 236 270 L 218 280 L 240 288 L 228 300 L 272 295 Z" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2.5" stroke-linejoin="round" />
+
+            <!-- Plump Body -->
+            <path d="M 265 275 C 260 220 330 195 395 215 C 435 228 448 270 420 302 C 392 332 325 330 285 305 C 270 296 266 286 265 275 Z" fill="url(#bodyGrad)" stroke="#94a3b8" stroke-width="3" />
+
+            <!-- Neck -->
+            <path d="M 378 232 C 392 195 385 150 400 118 C 410 96 435 90 452 104 C 462 115 452 145 438 175 C 425 205 430 238 415 262 Z" fill="url(#bodyGrad)" stroke="#94a3b8" stroke-width="3" />
+
+            <!-- Head & Crest -->
+            <g id="pelicanHead">
+              <path d="M 398 112 L 372 96 L 388 116 L 368 112 L 388 126 L 375 128 L 400 135 Z" fill="#f8fafc" stroke="#94a3b8" stroke-width="2.5" stroke-linejoin="round" />
+              <circle cx="430" cy="115" r="32" fill="url(#bodyGrad)" stroke="#94a3b8" stroke-width="3" />
+
+              <!-- Jumping Fish inside Pouch (animated when tossed) -->
+              <g id="pouchFish" transform="translate(520, 130) rotate(-15)" opacity="0">
+                <ellipse cx="0" cy="0" rx="22" ry="10" fill="#38bdf8" stroke="#0284c7" stroke-width="2" />
+                <polygon points="-20,0 -32,-9 -30,9" fill="#0284c7" />
+                <circle cx="12" cy="-2" r="2.5" fill="#0f172a" />
+              </g>
+
+              <!-- Giant Gular Pouch -->
+              <path id="gularPouch" d="M 452 122 C 455 198 515 222 568 188 C 602 166 612 140 612 126 Z" fill="url(#pouchGrad)" stroke="#c2410c" stroke-width="3" stroke-linejoin="round" />
+              <path d="M 468 138 Q 515 182 588 134" fill="none" stroke="#ea580c" stroke-width="2" opacity="0.65" />
+              <path d="M 480 156 Q 525 195 575 152" fill="none" stroke="#ea580c" stroke-width="2" opacity="0.5" />
+
+              <!-- Upper Beak -->
+              <path id="upperBeak" d="M 450 96 L 614 114 C 625 116 628 128 620 136 C 615 140 609 135 608 128 L 448 124 Z" fill="url(#beakUpperGrad)" stroke="#b45309" stroke-width="3" stroke-linejoin="round" />
+              <ellipse cx="478" cy="108" rx="4" ry="1.8" transform="rotate(6 478 108)" fill="#78350f" />
+
+              <!-- Eye -->
+              <circle cx="438" cy="108" r="13" fill="#fef08a" opacity="0.8" />
+              <circle cx="438" cy="108" r="9" fill="#ffffff" stroke="#334155" stroke-width="2.5" />
+              <circle cx="441" cy="108" r="4.5" fill="#0f172a" />
+              <circle cx="439" cy="105" r="2" fill="#ffffff" />
+              <path d="M 426 95 Q 439 90 450 97" fill="none" stroke="#475569" stroke-width="3" stroke-linecap="round" />
+
+              <!-- Cycling Cap -->
+              <path d="M 404 95 C 408 72 445 70 454 92 Z" fill="#0284c7" stroke="#0369a1" stroke-width="2.5" />
+              <path d="M 426 76 L 432 93" stroke="#facc15" stroke-width="4" />
+              <path d="M 448 90 L 472 92 C 474 96 465 99 450 96 Z" fill="#0369a1" />
+              <circle cx="428" cy="75" r="4" fill="#facc15" />
+            </g>
+          </g>
+
+          <!-- Near Leg (dynamically updated via IK) -->
+          <g id="nearLegGroup">
+            <line id="nearCrank" x1="390" y1="430" x2="420" y2="385" stroke="#94a3b8" stroke-width="8" stroke-linecap="round" />
+            <line id="nearThighBorder" x1="345" y1="295" x2="422" y2="320" stroke="#94a3b8" stroke-width="24" stroke-linecap="round" />
+            <line id="nearThigh" x1="345" y1="295" x2="422" y2="320" stroke="#f8fafc" stroke-width="19" stroke-linecap="round" />
+            <line id="nearShin" x1="422" y1="320" x2="420" y2="382" stroke="url(#legGrad)" stroke-width="11" stroke-linecap="round" />
+            <circle id="nearKnee" cx="422" cy="320" r="7.5" fill="#fb923c" />
+            <path id="nearFoot" d="M 410 382 L 456 385 C 458 374 442 368 420 375 Z" fill="url(#legGrad)" stroke="#c2410c" stroke-width="2" stroke-linejoin="round" />
+            <rect id="nearPedal" x="404" y="383" width="38" height="9" rx="4" fill="#0f172a" stroke="#475569" stroke-width="2" />
+          </g>
+
+          <!-- Bell & Handlebar Grip -->
+          <circle id="bikeBell" cx="458" cy="220" r="8" fill="#fbbf24" stroke="#b45309" stroke-width="2" />
+          <g id="bellRings" stroke="#f59e0b" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0">
+            <path d="M 448 206 Q 458 198 468 206" />
+            <path d="M 442 198 Q 458 188 474 198" />
+          </g>
+          <rect x="420" y="231" width="26" height="11" rx="5" transform="rotate(-12 433 236)" fill="#1e293b" />
+
+          <!-- Foreground Wing -->
+          <g id="pelicanWing" filter="url(#softShadow)">
+            <path d="M 380 268 C 415 272 442 256 448 242 C 452 232 438 225 426 230 C 405 236 380 245 360 250 Z" fill="#334155" stroke="#1e293b" stroke-width="2.5" />
+            <path d="M 318 242 C 345 225 395 225 434 235 C 442 238 442 248 430 250 C 415 253 428 260 416 263 C 400 266 408 273 392 274 C 355 276 322 270 308 258 C 302 252 308 246 318 242 Z" fill="url(#wingGrad)" stroke="#94a3b8" stroke-width="3" stroke-linejoin="round" />
+            <path d="M 332 250 Q 368 252 398 245" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" />
+            <path d="M 340 261 Q 370 263 392 257" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" />
+          </g>
+        </g>
+      </svg>
+    </div>
+
+    <div class="controls-bar">
+      <div class="slider-group">
+        <label for="speedSlider">🚴 骑行速度</label>
+        <input id="speedSlider" type="range" min="0" max="60" value="24" />
+      </div>
+      <div class="btn-group">
+        <button id="bellBtn" type="button">🔔 按车铃</button>
+        <button id="fishBtn" type="button">🐟 颠鱼入袋</button>
+        <button id="wheelieBtn" type="button" class="primary">✨ 翘头特技</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const speedSlider = document.getElementById('speedSlider');
+    const speedVal = document.getElementById('speedVal');
+    const distVal = document.getElementById('distVal');
+    const fishVal = document.getElementById('fishVal');
+
+    const rearWheelSpin = document.getElementById('rearWheelSpin');
+    const frontWheelSpin = document.getElementById('frontWheelSpin');
+    const chainringSpin = document.getElementById('chainringSpin');
+    const roadStripe = document.getElementById('roadStripe');
+    const bikeChain = document.getElementById('bikeChain');
+
+    const nearCrank = document.getElementById('nearCrank');
+    const nearThigh = document.getElementById('nearThigh');
+    const nearThighBorder = document.getElementById('nearThighBorder');
+    const nearShin = document.getElementById('nearShin');
+    const nearKnee = document.getElementById('nearKnee');
+    const nearFoot = document.getElementById('nearFoot');
+    const nearPedal = document.getElementById('nearPedal');
+
+    const farCrank = document.getElementById('farCrank');
+    const farThigh = document.getElementById('farThigh');
+    const farShin = document.getElementById('farShin');
+    const farKnee = document.getElementById('farKnee');
+    const farFoot = document.getElementById('farFoot');
+    const farPedal = document.getElementById('farPedal');
+
+    const pelicanBody = document.getElementById('pelicanBody');
+    const pelicanWing = document.getElementById('pelicanWing');
+    const gularPouch = document.getElementById('gularPouch');
+    const bikeRig = document.getElementById('bikeRig');
+    const bikeShadow = document.getElementById('bikeShadow');
+    const cloud1 = document.getElementById('cloud1');
+    const cloud2 = document.getElementById('cloud2');
+    const bellRings = document.getElementById('bellRings');
+    const pouchFish = document.getElementById('pouchFish');
+
+    let crankAngle = -0.8;
+    let wheelAngle = 0;
+    let roadOffset = 0;
+    let cloud1X = 0;
+    let cloud2X = 0;
+    let distanceKm = 0;
+    let fishCount = 3;
+
+    // Interactive state
+    let wheelieTimer = 0;
+    let bellTimer = 0;
+    let fishJumpTimer = 0;
+
+    // 2-bone Inverse Kinematics solver for Pelican Leg (Hip -> Knee -> Pedal)
+    function solveKnee(hipX, hipY, pedalX, pedalY, L1, L2) {
+      const dx = pedalX - hipX;
+      const dy = pedalY - hipY;
+      let d = Math.hypot(dx, dy);
+      const maxReach = L1 + L2 - 0.5;
+      if (d > maxReach) d = maxReach;
+      if (d < Math.abs(L1 - L2) + 0.5) d = Math.abs(L1 - L2) + 0.5;
+
+      const a = (L1 * L1 - L2 * L2 + d * d) / (2 * d);
+      const h = Math.sqrt(Math.max(0, L1 * L1 - a * a));
+      const mx = hipX + (a * dx) / d;
+      const my = hipY + (a * dy) / d;
+
+      // Knee bends forward/upward (+dy/d, -dx/d)
+      const kneeX = mx + (h * dy) / d;
+      const kneeY = my - (h * dx) / d;
+      return { x: kneeX, y: kneeY };
+    }
+
+    function updateLeg(angle, isNear, hipX, hipY) {
+      const bbX = 390;
+      const bbY = 430;
+      const crankR = 48;
+      const px = bbX + crankR * Math.cos(angle);
+      const py = bbY + crankR * Math.sin(angle);
+
+      const knee = solveKnee(hipX, hipY, px, py, 82, 86);
+
+      if (isNear) {
+        nearCrank.setAttribute('x2', px);
+        nearCrank.setAttribute('y2', py);
+        nearThigh.setAttribute('x1', hipX);
+        nearThigh.setAttribute('y1', hipY);
+        nearThigh.setAttribute('x2', knee.x);
+        nearThigh.setAttribute('y2', knee.y);
+        nearThighBorder.setAttribute('x1', hipX);
+        nearThighBorder.setAttribute('y1', hipY);
+        nearThighBorder.setAttribute('x2', knee.x);
+        nearThighBorder.setAttribute('y2', knee.y);
+        nearShin.setAttribute('x1', knee.x);
+        nearShin.setAttribute('y1', knee.y);
+        nearShin.setAttribute('x2', px);
+        nearShin.setAttribute('y2', py - 3);
+        nearKnee.setAttribute('cx', knee.x);
+        nearKnee.setAttribute('cy', knee.y);
+        nearPedal.setAttribute('x', px - 18);
+        nearPedal.setAttribute('y', py - 2);
+        nearFoot.setAttribute(
+          'd',
+          `M ${px - 10} ${py - 3} L ${px + 34} ${py} C ${px + 36} ${py - 11} ${px + 20} ${py - 17} ${px} ${py - 10} Z`
+        );
+      } else {
+        farCrank.setAttribute('x2', px);
+        farCrank.setAttribute('y2', py);
+        farThigh.setAttribute('x1', hipX - 8);
+        farThigh.setAttribute('y1', hipY);
+        farThigh.setAttribute('x2', knee.x);
+        farThigh.setAttribute('y2', knee.y);
+        farShin.setAttribute('x1', knee.x);
+        farShin.setAttribute('y1', knee.y);
+        farShin.setAttribute('x2', px);
+        farShin.setAttribute('y2', py - 3);
+        farKnee.setAttribute('cx', knee.x);
+        farKnee.setAttribute('cy', knee.y);
+        farPedal.setAttribute('x', px - 18);
+        farPedal.setAttribute('y', py - 2);
+        farFoot.setAttribute(
+          'd',
+          `M ${px - 8} ${py - 3} L ${px + 32} ${py + 1} C ${px + 35} ${py - 9} ${px + 20} ${py - 15} ${px + 2} ${py - 9} Z`
+        );
+      }
+    }
+
+    speedSlider.addEventListener('input', () => {
+      speedVal.textContent = speedSlider.value;
+    });
+
+    document.getElementById('bellBtn').addEventListener('click', () => {
+      bellTimer = 40;
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        [1320, 1760].forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0.18, ctx.currentTime + idx * 0.09);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.09 + 0.35);
+          osc.connect(gain).connect(ctx.destination);
+          osc.start(ctx.currentTime + idx * 0.09);
+          osc.stop(ctx.currentTime + idx * 0.09 + 0.36);
+        });
+      } catch (_) {}
+    });
+
+    document.getElementById('fishBtn').addEventListener('click', () => {
+      fishJumpTimer = 60;
+      fishCount++;
+      fishVal.textContent = fishCount;
+    });
+
+    document.getElementById('wheelieBtn').addEventListener('click', () => {
+      if (wheelieTimer <= 0) wheelieTimer = 75;
+    });
+
+    let lastTime = performance.now();
+    function animate(now) {
+      const dt = Math.min(0.05, (now - lastTime) / 1000);
+      lastTime = now;
+
+      const speed = Number(speedSlider.value);
+      const angularVel = (speed / 24) * 5.2;
+
+      crankAngle += angularVel * dt;
+      wheelAngle += angularVel * 1.9 * dt;
+      roadOffset = (roadOffset + speed * 11 * dt) % 80;
+      distanceKm += (speed / 3600) * dt;
+      distVal.textContent = distanceKm.toFixed(2);
+
+      // Spin wheels & chainring
+      const deg = (wheelAngle * 180) / Math.PI;
+      rearWheelSpin.setAttribute('transform', `rotate(${deg})`);
+      frontWheelSpin.setAttribute('transform', `rotate(${deg})`);
+      chainringSpin.setAttribute('transform', `rotate(${(crankAngle * 180) / Math.PI})`);
+      roadStripe.setAttribute('stroke-dashoffset', roadOffset);
+      bikeChain.setAttribute('stroke-dashoffset', -roadOffset * 0.4);
+
+      // Clouds drift
+      cloud1X -= (8 + speed * 0.4) * dt;
+      if (cloud1X < -300) cloud1X = 720;
+      cloud2X -= (5 + speed * 0.25) * dt;
+      if (cloud2X < -620) cloud2X = 360;
+      cloud1.setAttribute('transform', `translate(${cloud1X}, 0)`);
+      cloud2.setAttribute('transform', `translate(${cloud2X}, 0)`);
+
+      // Subtle body bobbing synced with crank
+      const bobY = Math.sin(crankAngle * 2) * 3.5;
+      const hipX = 345;
+      const hipY = 295 + bobY;
+      pelicanBody.setAttribute('transform', `translate(0, ${bobY})`);
+      pelicanWing.setAttribute('transform', `translate(0, ${bobY * 0.5})`);
+
+      // Pouch jiggle
+      const pouchBounce = Math.sin(crankAngle * 2 - 0.6) * 4;
+      gularPouch.setAttribute(
+        'd',
+        `M 452 122 C 455 ${198 + pouchBounce} 515 ${222 + pouchBounce * 1.3} 568 ${188 + pouchBounce} C 602 166 612 140 612 126 Z`
+      );
+
+      // Update IK legs
+      updateLeg(crankAngle, true, hipX, hipY);
+      updateLeg(crankAngle + Math.PI, false, hipX, hipY);
+
+      // Bell ring visual
+      if (bellTimer > 0) {
+        bellTimer--;
+        bellRings.setAttribute('opacity', (bellTimer % 8 < 4) ? '1' : '0.2');
+      } else {
+        bellRings.setAttribute('opacity', '0');
+      }
+
+      // Fish toss into gular pouch animation
+      if (fishJumpTimer > 0) {
+        fishJumpTimer--;
+        const p = 1 - fishJumpTimer / 60;
+        const fx = 525 - Math.sin(p * Math.PI) * 15;
+        const fy = 140 - Math.sin(p * Math.PI) * 85;
+        const frot = -25 + p * 210;
+        pouchFish.setAttribute('opacity', p < 0.92 ? '1' : '0');
+        pouchFish.setAttribute('transform', `translate(${fx}, ${fy}) rotate(${frot})`);
+      } else {
+        pouchFish.setAttribute('opacity', '0');
+      }
+
+      // Wheelie trick rotation around rear hub (250, 430)
+      if (wheelieTimer > 0) {
+        wheelieTimer--;
+        const wProgress = Math.sin((wheelieTimer / 75) * Math.PI);
+        const tilt = -16 * wProgress;
+        bikeRig.setAttribute('transform', `rotate(${tilt} 250 430)`);
+        bikeShadow.setAttribute('rx', 225 - wProgress * 45);
+      } else {
+        bikeRig.setAttribute('transform', 'rotate(0 250 430)');
+        bikeShadow.setAttribute('rx', 225);
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>
